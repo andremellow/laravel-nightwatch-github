@@ -74,13 +74,20 @@ Laravel package discovery registers the service provider automatically.
 
 ## GitHub token setup
 
-Create a fine-grained personal access token in GitHub:
+The application needs a GitHub credential because it creates labels and issues through the GitHub REST API. Use a fine-grained personal access token, not a classic token. The token does not come from Nightwatch.
 
-1. Open **GitHub > Settings > Developer settings > Personal access tokens > Fine-grained tokens**.
-2. Select the account that owns the destination repository.
-3. Restrict repository access to the repository that should receive Nightwatch issues.
-4. Grant **Issues: Read and write** permission.
-5. Copy the token and store it in your production secret manager.
+Create the token as follows:
+
+1. Sign in to the GitHub account that will create the issues. A dedicated machine or bot account is recommended for production integrations.
+2. Open [GitHub fine-grained personal access tokens](https://github.com/settings/personal-access-tokens), or navigate to **Settings > Developer settings > Personal access tokens > Fine-grained tokens**.
+3. Select **Generate new token**.
+4. Enter a descriptive name, such as `Nightwatch production issues`, and choose an expiration date that follows your security policy.
+5. Under **Resource owner**, select the user or organization that owns the destination repository.
+6. Under **Repository access**, select **Only select repositories**, then choose the repository that should receive Nightwatch issues.
+7. Under **Repository permissions**, set **Issues** to **Read and write**. GitHub adds read-only **Metadata** access automatically; no Contents, Actions, Administration, or organization permission is required.
+8. Select **Generate token**, copy the value immediately, and store it in your production secret manager. GitHub does not display the complete token again.
+
+If the repository belongs to an organization, its policy may require an organization owner to approve the token. A token awaiting approval cannot manage the repository. See GitHub's official guides for [creating a fine-grained token](https://docs.github.com/en/authentication/keeping-your-account-and-data-secure/managing-your-personal-access-tokens#creating-a-fine-grained-personal-access-token) and [organization approval](https://docs.github.com/en/organizations/managing-programmatic-access-to-your-organization/managing-requests-for-personal-access-tokens-in-your-organization).
 
 The token is used only as a Bearer token for the GitHub REST API. It is never placed in an issue body or application log by this package.
 
@@ -97,6 +104,8 @@ For Laravel Cloud, add them under the production environment's variables or secr
 
 Deploy the package before configuring Nightwatch so the webhook endpoint is publicly available.
 
+The Nightwatch signing secret is not a GitHub token and you do not invent it yourself. Nightwatch generates it for the webhook and displays it in the webhook editor. Both Nightwatch and your application use the same secret to calculate and verify the request signature.
+
 The default endpoint is:
 
 ```text
@@ -105,13 +114,14 @@ https://your-application.example/api/webhooks/nightwatch
 
 Then configure Nightwatch:
 
-1. Open your application in the Nightwatch dashboard.
+1. Sign in to the [Laravel Nightwatch dashboard](https://nightwatch.laravel.com) and open the application that should report issues.
 2. Open the application's **Issues** settings.
-3. Find **Webhooks** and add a webhook.
-4. Enter the public HTTPS endpoint shown above.
-5. Save the webhook.
-6. Open the webhook configuration and copy its signing secret.
-7. Store that value in your deployment platform as `NIGHTWATCH_WEBHOOK_SECRET`.
+3. Find **Webhooks** and add a webhook. Nightwatch currently supports one webhook per application.
+4. Enter a descriptive name, such as `GitHub production issues`.
+5. Enter the public HTTPS endpoint shown above and save the webhook.
+6. Select **Edit** for that webhook. Copy the signing secret displayed there; you can return to this screen and copy it again later.
+7. Store the exact value in your application's production secret manager as `NIGHTWATCH_WEBHOOK_SECRET`.
+8. Redeploy or restart the application and its queue workers if your platform does not reload environment variables automatically.
 
 ```dotenv
 NIGHTWATCH_WEBHOOK_SECRET=the-signing-secret-shown-by-nightwatch
@@ -120,6 +130,8 @@ NIGHTWATCH_WEBHOOK_SECRET=the-signing-secret-shown-by-nightwatch
 Nightwatch sends a `Nightwatch-Signature` HTTP header. The header contains an HMAC-SHA256 signature calculated from the exact raw request body and the signing secret. The package calculates the same value and compares the two signatures with `hash_equals`. Invalid or missing signatures receive `401 Unauthorized` and are never queued.
 
 Do not paste the signing secret into the webhook URL, GitHub, source code, logs, or issue bodies.
+
+For the authoritative webhook fields, supported events, and signature algorithm, see the [Laravel Nightwatch webhook documentation](https://nightwatch.laravel.com/docs/webhooks).
 
 ## Queue setup
 
