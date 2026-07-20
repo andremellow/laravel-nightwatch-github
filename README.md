@@ -32,7 +32,7 @@ Only the `production` environment is processed by default. Other environments re
 ## Requirements
 
 - PHP 8.2 or later
-- Laravel 11, 12, or 13
+- Laravel 12 or 13
 - A persistent Laravel queue in production
 - A GitHub fine-grained personal access token with access to the target repository
 - A Laravel Nightwatch application with webhook access
