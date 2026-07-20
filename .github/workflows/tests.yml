@@ -29,7 +29,7 @@ jobs:
           php-version: ${{ matrix.php }}
           coverage: none
 
-      - run: composer require "illuminate/support:${{ matrix.laravel }}" --no-interaction --no-update
+      - run: composer require "laravel/framework:${{ matrix.laravel }}" --dev --no-interaction --no-update
       - uses: ramsey/composer-install@v3
         with:
           dependency-versions: highest
